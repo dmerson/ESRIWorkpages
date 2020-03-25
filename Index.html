@@ -1,0 +1,251 @@
+﻿<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Renderer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.1/jquery.contextMenu.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    <!-- Latest icon font stylesheet -->
+    <link rel="stylesheet" href="https://cdn.uadigital.arizona.edu/lib/ua-brand-icons/latest/ua-brand-icons.css">
+
+    <!-- Compiled and minified UA Bootstrap CSS, icon font not included -->
+    <link rel="stylesheet" href="https://cdn.uadigital.arizona.edu/lib/ua-bootstrap/v1.0.0-beta.19/ua-bootstrap.min.css">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css">
+
+ 
+    
+   
+    <link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.14/"></script>
+</head>
+<body>
+    <div id="viewDiv" class="col-lg-12" style="height: 100%; width: 100%;">
+
+
+        
+        
+        <div>
+
+
+            
+
+
+             
+            <!----------------------Basemap BUTTON-->
+            <script>
+                function changeBaseMap() {
+                    map.basemap = $("input[name='baseMap']:checked").val();
+                }
+            </script>
+            <span class="dropdown" id="baseMapButtonSpan" style="left: 50px; position: absolute; top: 0px;">
+                <button id="btnbaseMapDropdown" class="btn btn-secondary dropdown-toggle btn btn-default" type="button" id="baseMapdropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Basemap
+                </button>
+                <span class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="background-color: #8b0015;float: right">
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Dark Gray &nbsp;<input type="radio" id="dark-gray" name="baseMap" value="dark-gray" style="float: right" checked="true" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Topo &nbsp;<input type="radio" id="topoBase" name="baseMap" value="topo" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Satelitte &nbsp;<input type="radio" id="satellite" name="baseMap" value="satellite" style="float: right" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Gray &nbsp;<input type="radio" id="gray" name="baseMap" value="gray" style="float: right" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Nat. Geo &nbsp;<input type="radio" id="national-geographic" name="baseMap" value="national-geographic" style="float: right" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Hybrid &nbsp;<input type="radio" id="hybrid" name="baseMap" value="hybrid" style="float: right" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Topo Vector &nbsp;<input type="radio" id="topo-vector" name="baseMap" value="topo-vector" style="float: right" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        Street &nbsp;<input type="radio" id="streets" name="baseMap" value="streets" style="float: right" onclick="changeBaseMap()" />
+                    </div>
+                    <div class="dropdown-item  btn btn-default" style="float:right">
+                        OSM &nbsp;<input type="radio" id="osm" name="baseMap" value="osm" style="float: right" onclick="changeBaseMap()" />
+                    </div>
+
+
+
+
+
+                </span>
+            </span>
+            <!----------------------End Basemap BUTTON-->
+            
+            
+
+            
+        </div>
+
+    </div>
+<script>
+
+    let map,
+        view,
+        csvLayer,
+        csvLayerView,
+        polygonGraphicsLayer,
+        sketchViewModel,
+        highlight,
+        grid,
+        legend,
+        typeCreatorProxy,
+        simpleRendererProxy;
+    function RunMap() {
+        require([
+            "esri/Map",
+            "esri/layers/CSVLayer",
+            "esri/views/MapView",
+            "esri/layers/GraphicsLayer",
+            "esri/widgets/Sketch/SketchViewModel",
+            "dgrid/OnDemandGrid",
+            "dgrid/extensions/ColumnHider",
+            "esri/Graphic",
+            "dstore/legacy/StoreAdapter",
+            "dojo/store/Memory",
+            "dgrid/Selection",
+            "esri/core/urlUtils",
+            "esri/layers/FeatureLayer",
+            "esri/PopupTemplate",
+            "esri/widgets/Legend",
+            "esri/renderers/smartMapping/creators/type",
+            "esri/renderers/SimpleRenderer",
+            "esri/symbols/SimpleLineSymbol",
+            "esri/Color",
+            "esri/symbols/SimpleFillSymbol",
+            "esri/widgets/Print",
+            "dojo/domReady!"
+        ],
+            function (Map,
+                CSVLayer,
+                MapView,
+                GraphicsLayer,
+                SketchViewModel,
+                OnDemandGrid,
+                ColumnHider,
+                Graphic,
+                StoreAdapter,
+                Memory,
+                Selection,
+                urlUtils,
+                FeatureLayer,
+                PopupTemplate,
+                Legend,
+                typeRendererCreator,
+                SimpleRenderer,
+                SimpleLineSymbol,
+                Color,
+                SimpleFillSymbol,
+                Print) {
+
+                typeCreatorProxy = typeRendererCreator;
+                simpleRendererProxy = new SimpleRenderer();
+
+                const url = "http://127.0.0.1:9000/trainsofdeath.csv";
+
+                const template_dot = new PopupTemplate(
+                    {
+                        title: "Incident {INCDTNO}",
+                        content:
+                            "<p> Incident {INCDTNO}</p> " +
+                            "<b>Railroad:</b> {RAILROAD}<br> Age:{AGE}<br> State:{STATE}" 
+                            
+
+
+                    });
+
+                
+                csvLayer = new CSVLayer({
+                    url: url,
+                    copyright: "University of Arizona",
+                    title: "CSV Template",
+                   // popupTemplate: template_dot,
+                    objectIdField: "__OBJECTID",
+                    latitudeField: "LATITUDE",
+                    longitudeField:"LONGITUD"
+                     
+                });
+
+                map = new Map({
+                    basemap: "osm",
+                    layers: [csvLayer]
+                });
+
+                view = new MapView({
+                    container: "viewDiv",
+                    center: [-113.5, 36.7],
+                    zoom: 10,
+                    map: map
+                });
+
+
+
+                csvLayer.when(function () {
+                    const x = csvLayer.fullExtent.center.x;
+                    view.goTo(csvLayer.fullExtent);
+                    const featureLayer = map.layers.getItemAt(0);
+                    
+                    var fieldInfos1 = featureLayer.fields.map(function(field){  
+                            return {  
+                                "fieldName": field.name,  
+                                "label": field.alias,  
+                                "visible": true  
+                            }  
+                        });
+                        
+                    var template = new PopupTemplate({
+                        title: "Casualty",
+                        content: [ {
+                            type:"fields",
+                            fieldInfos:fieldInfos1
+                        }  ]
+                        });
+                         
+                        csvLayer.popupTemplate = template;
+
+
+                }).catch(errorCallback);;
+
+                function errorCallback(err) {
+                    console.log(err);
+                }
+                 
+
+
+            
+
+
+
+         
+
+
+
+       
+
+         
+
+        
+
+         
+
+        
+
+         
+
+       
+    });
+    }
+
+    RunMap();
+</script>
+</body>
+
+</html>
