@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Create a layer from a portal item - 4.14</title>
+
+    <style>
+
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+    </style>
+
+    <link rel="stylesheet"
+          href="https://js.arcgis.com/4.14/esri/themes/light/main.css" />
+
+    <script src="https://js.arcgis.com/4.14/"></script>
+
+    <script>require([
+    "esri/Map",
+    "esri/views/SceneView",
+    "esri/layers/Layer",
+    "esri/PopupTemplate",
+], function (Map, SceneView, Layer, PopupTemplate) {
+    var map = new Map({
+        basemap: "gray"
+    });
+
+    var view = new SceneView({
+        map: map,
+        container: "viewDiv",
+        zoom: 7,
+        center: [-87, 34]
+    });
+    
+
+    /************************************************
+     *
+     * Create a layer from an existing Portal item hosted
+     * in ArcGIS Online using the ID of the item.
+     *
+     *************************************************/
+    Layer.fromPortalItem({
+            portalItem: {
+                // autocasts as new PortalItem()
+             id: "8444e275037549c1acab02d2626daaee"
+           // id:"bdc1a4c4432044698b649e3146c6c8fc"
+           // id:"1a53360d2a0e4151a045de4f5adf6e3b"
+           // id:"aa6cdb543acd417aac133dce47a593ff"
+            }
+        })
+        .then(addLayer)
+        .catch(rejection);
+        
+    // Adds the layer to the map once it loads
+        function addLayer(layer) {
+            //debugger;
+            //var fieldInfos1 = layer.fields.map(function (field) {
+            //    return {
+            //        "fieldName": field.name,
+            //        "label": field.alias,
+            //        "visible": true
+            //    }
+            //});
+            //var template = new PopupTemplate({
+            //    title: "Portal Item",
+            //    content: [{
+            //        type: "fields",
+            //        fieldInfos: fieldInfos1
+            //    }]
+            //});
+            //layer.popupTemplate = template;
+        map.add(layer);
+    }
+
+    function rejection(error) {
+        console.log("Layer failed to load: ", error);
+    }
+});</script>
+</head>
+
+<body>
+<div id="viewDiv"></div>
+</body>
+</html>

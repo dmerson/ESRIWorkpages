@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="description" content="[Load a basic WebMap - 4.2]">
+    <!--
+    ArcGIS API for JavaScript, https://js.arcgis.com
+    For more information about tdhe webmap-basic sample, read the original sample description at developers.arcgis.com.
+    https://developers.arcgis.com/javascript/latest/webmap-basic/index.html
+    -->
+    <title>Load a basic WebMap - 4.2</title>
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.2/esri/css/main.css">
+
+    <script src="https://js.arcgis.com/4.2/"></script>
+
+    <script>
+    require([
+      "esri/views/MapView",
+        "esri/WebMap",
+        "esri/config",
+      "dojo/domReady!"
+    ], function(
+            MapView, WebMap, esriConfig
+    ) {
+
+      /************************************************************
+       * Creates a new WebMap instance. A WebMap must reference
+       * a PortalItem ID that represents a WebMap saved to
+       * arcgis.com or an on-premise portal.
+       *
+       * To load a WebMap from an on-premise portal, set the portal
+       * url in esriConfig.portalUrl.
+       ************************************************************/
+          //  esri.portalUrl = "https://uagis.maps.arcgis.com/";
+      var webmap = new WebMap({
+        portalItem: { // autocasts as new PortalItem()
+          id: "f2e9b762544945f390ca4ac3671cfa72"
+             // id:"bdc1a4c4432044698b649e3146c6c8fc"
+        }
+      });
+
+      /************************************************************
+       * Set the WebMap instance to the map property in a MapView.
+       ************************************************************/
+      var view = new MapView({
+        map: new WebMap({
+          basemap: "satellite"
+        }),
+        container: "viewDiv"
+      });
+
+      //webmap.load().then(function(){
+      //  var layers = webmap.layers;
+      //  var firstLayer = layers.getItemAt(0);
+      //  console.log("first layer loaded? ", firstLayer.loaded);
+
+      //  return firstLayer.load();
+      //}).then(function(layer){
+      //  view.map.add(layer);
+      //});
+
+    });
+    </script>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+</body>
+
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Intro to FeatureLayer - 4.14</title>
+
+    <link rel="stylesheet"
+          href="https://js.arcgis.com/4.14/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.14/"></script>
+
+    <style>
+
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <script>
+        var map, webMap, featureLayer
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/renderers/SimpleRenderer",
+            "esri/renderers/smartMapping/creators/type",
+        ], function (Map, MapView, FeatureLayer, SimpleRenderer, typeRendererCreator) {
+            var map = new Map({
+                basemap: "topo"
+            });
+
+             view = new MapView({
+                container: "viewDiv",
+                map: map,
+
+                //extent: {
+                //    // autocasts as new Extent()
+                //    xmin: -9177811,
+                //    ymin: 4247000,
+                //    xmax: -9176791,
+                //    ymax: 4247784,
+                //    spatialReference: 102100
+                //}
+            });
+
+            /********************
+             * Add feature layer
+             ********************/
+
+            var renderer = new SimpleRenderer({
+                // symbol: defaultSym,
+
+                symbol: {
+                    type: "simple-fill",  // autocasts as new SimpleFillSymbol()
+                    color: [ 255, 255, 0, 0.5 ],
+                    outline: {  // autocasts as new SimpleLineSymbol()
+                        width: 1,
+                        color: "white"
+                    }
+                },
+                label: "Census Tracts",
+                visualVariables: [
+                    {
+                        type: "color",
+                        field: "total",
+                        legendOptions: {
+                            title: "Deaths"
+                        },
+                        stops: [
+                            {
+                                value: 268,
+                                color: "#fc8d59",
+                                label: "268"
+                            },
+                            {
+                                value: 46000,
+                                color: "#ffffbf",
+                                label: " 46000"
+                            },
+                            {
+                                value: 170000,
+                                color: "#91cf60",
+                                label: ">100"
+                            }]
+                    }
+                ]
+            });
+            // Carbon storage of trees in Warren Wilson College.
+            featureLayer = new FeatureLayer({
+                // url:"https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Landscape_Trees/FeatureServer/0"
+                //url:"https://services1.arcgis.com/Ezk9fcjSUkeadg6u/arcgis/rest/services/us_counties_corona/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0"
+                // url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/ArcGIS/rest/services/Boundary/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/ArcGIS/rest/services/Parks_and_Open_Space/FeatureServer/0"
+                //url:"https://services1.arcgis.com/Ezk9fcjSUkeadg6u/ArcGIS/rest/services/USStates_Tiger_Map2/FeatureServer/0"
+                //url:"https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_States_Generalized/FeatureServer/0"
+                url: "https://services1.arcgis.com/Ezk9fcjSUkeadg6u/arcgis/rest/services/Picked_State_Borders_First_Corona/FeatureServer/0",
+                renderer:renderer
+            });
+            var typeParams = {
+                layer: featureLayer,
+                view: view,
+                field: "deaths"
+            };
+
+// when the promise resolves, apply the visual variables to the renderer
+
+                map.add(featureLayer);
+                //typeRendererCreator.createRenderer(typeParams)
+                //    .then(function (response) {
+                //        debugger;
+                //        featureLayer.renderer = response.renderer;
+                //    });
+        });
+    </script>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+</body>
+</html>

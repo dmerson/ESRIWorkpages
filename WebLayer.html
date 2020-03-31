@@ -1,0 +1,69 @@
+﻿<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <!--
+    ArcGIS API for JavaScript, https://js.arcgis.com
+    For more information about the webmap-basic sample, read the original sample description at developers.arcgis.com.
+    https://developers.arcgis.com/javascript/latest/sample-code/webmap-basic/index.html
+    -->
+    <title>Load a basic WebMap - 4.14</title>
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/themes/light/main.css" />
+
+    <script src="https://js.arcgis.com/4.14/"></script>
+
+    <script>
+        var webmap, view;
+        require(["esri/views/MapView", "esri/WebMap"], function(MapView, WebMap) {
+            /************************************************************
+             * Creates a new WebMap instance. A WebMap must reference
+             * a PortalItem ID that represents a WebMap saved to
+             * arcgis.com or an on-premise portal.
+             *
+             * To load a WebMap from an on-premise portal, set the portal
+             * url with esriConfig.portalUrl.
+             ************************************************************/
+            webmap = new WebMap({
+                portalItem: {
+                    // autocasts as new PortalItem()
+                   // id: "bdc1a4c4432044698b649e3146c6c8fc"
+                   // id:"f35894c4de684de19cfec04dcab1c864"
+                   // id:"7508939b24004f1f88628550c2063a48"
+                   // id:"c45f628f430e41b38725aab331cce5a3"
+                   // id:"c1ed0753d9be4492a6d4c167febf2163"
+                   // id:"835e8b7d2f494487ad02e27c0cf44da5"
+                   // id:"835e8b7d2f494487ad02e27c0cf44da5"
+                    id:"0b147af935864fc7937b0c25549ca215"
+                   //id:"1a53360d2a0e4151a045de4f5adf6e3b"
+                }
+            });
+            /************************************************************
+             * Set the WebMap instance to the map property in a MapView.
+             ************************************************************/
+            view = new MapView({
+                map: webmap,
+                container: "viewDiv"
+            });
+            debugger;
+        });
+    </script>
+</head>
+
+<body>
+<div id="viewDiv"></div>
+</body>
+
+</html>

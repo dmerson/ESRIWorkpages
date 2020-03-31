@@ -148,28 +148,18 @@
 
                 typeCreatorProxy = typeRendererCreator;
                 simpleRendererProxy = new SimpleRenderer();
-
+                //enter in the name of the csv file after the server name
                 const url = "http://127.0.0.1:9000/trainsofdeath.csv";
 
-                const template_dot = new PopupTemplate(
-                    {
-                        title: "Incident {INCDTNO}",
-                        content:
-                            "<p> Incident {INCDTNO}</p> " +
-                            "<b>Railroad:</b> {RAILROAD}<br> Age:{AGE}<br> State:{STATE}" 
-                            
-
-
-                    });
-
-                
-                csvLayer = new CSVLayer({
+               csvLayer = new CSVLayer({
                     url: url,
                     copyright: "University of Arizona",
                     title: "CSV Template",
-                   // popupTemplate: template_dot,
-                    objectIdField: "__OBJECTID",
-                    latitudeField: "LATITUDE",
+                 
+                   objectIdField: "__OBJECTID",
+                    //enter in name of lat field
+                   latitudeField: "LATITUDE",
+                    //enter in name of long field
                     longitudeField:"LONGITUD"
                      
                 });
@@ -191,9 +181,9 @@
                 csvLayer.when(function () {
                     const x = csvLayer.fullExtent.center.x;
                     view.goTo(csvLayer.fullExtent);
-                    const featureLayer = map.layers.getItemAt(0);
+                     
                     
-                    var fieldInfos1 = featureLayer.fields.map(function(field){  
+                    var fieldInfos1 = csvLayer.fields.map(function(field){  
                             return {  
                                 "fieldName": field.name,  
                                 "label": field.alias,  
@@ -202,7 +192,7 @@
                         });
                         
                     var template = new PopupTemplate({
-                        title: "Casualty",
+                        title: "CSV File",
                         content: [ {
                             type:"fields",
                             fieldInfos:fieldInfos1
