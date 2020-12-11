@@ -1,0 +1,589 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Data Grid  </title>
+ 
+      
+    <link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.14/"></script>
+</head>
+<body>
+
+
+    <div class="container body-content">
+
+
+
+
+
+
+
+        <script>
+
+
+
+
+
+
+
+
+
+
+
+            function generateRenderer() {
+                if (legendOn) {
+                    var typeParams = {
+                        layer: csvLayer,
+                        numTypes: -1,
+                        field: "ClassName",
+
+                        view: view,
+                        legendOptions: {
+                            title: "VGS Data Points"
+                        }
+                    };
+                    typeCreatorProxy
+                        .createRenderer(typeParams)
+                        .then(function (response) {
+                            // set the renderer to the layer and add it to the map
+                            csvLayer.renderer = response.renderer;
+                            //map.add(csvLayer);
+                        })
+                        .catch(function (error) {
+                            console.error("there was an error: ", error);
+                        });
+                } else {
+                    var typeParams = {
+                        layer: csvLayer,
+                        numTypes: 0,
+                        field: "ClassName",
+
+                        view: view,
+                        legendOptions: {
+                            title: "VGS Data Points"
+                        }
+                    };
+                    typeCreatorProxy
+                        .createRenderer(typeParams)
+                        .then(function (response) {
+                            // set the renderer to the layer and add it to the map
+
+                            csvLayer.renderer = {
+                                type: "simple", // autocasts as new SimpleRenderer()
+                                symbol: {
+                                    type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                                    size: 6,
+                                    color: "#0c234b",
+                                    outline: { // autocasts as new SimpleLineSymbol()
+                                        width: 0.5,
+                                        color: "white"
+                                    }
+                                }
+                            };
+                            //map.add(csvLayer);
+
+                        })
+                        .catch(function (error) {
+                            console.error("there was an error: ", error);
+                        });
+
+
+                }
+
+
+            }
+
+            let map,
+                view,
+                csvLayer,
+                csvLayerView,
+                polygonGraphicsLayer,
+                sketchViewModel,
+                highlight,
+                grid,
+                legend,
+                typeCreatorProxy,
+                simpleRendererProxy,
+                labelClass;
+
+
+
+            function RunMap() {
+                require([
+                    "esri/Map",
+                    "esri/layers/CSVLayer",
+                    "esri/views/MapView",
+                    "esri/layers/GraphicsLayer",
+                    "esri/widgets/Sketch/SketchViewModel",
+                    "dgrid/OnDemandGrid",
+                    "dgrid/extensions/ColumnHider",
+                    "esri/Graphic",
+                    "dstore/legacy/StoreAdapter",
+                    "dojo/store/Memory",
+                    "dgrid/Selection",
+                    "esri/core/urlUtils",
+                    "esri/layers/FeatureLayer",
+                    "esri/PopupTemplate",
+                    "esri/widgets/Legend",
+                    "esri/renderers/smartMapping/creators/type",
+                    "esri/renderers/SimpleRenderer",
+                    "esri/symbols/SimpleLineSymbol",
+                    "esri/Color",
+                    "esri/symbols/SimpleFillSymbol",
+                    "esri/widgets/Print",
+                    "esri/layers/support/LabelClass",
+
+                    "esri/core/promiseUtils",
+                    "dojo/domReady!"
+                ],
+                    function (Map,
+                        CSVLayer,
+                        MapView,
+                        GraphicsLayer,
+                        SketchViewModel,
+                        OnDemandGrid,
+                        ColumnHider,
+                        Graphic,
+                        StoreAdapter,
+                        Memory,
+                        Selection,
+                        urlUtils,
+                        FeatureLayer,
+                        PopupTemplate,
+                        Legend,
+                        typeRendererCreator,
+                        SimpleRenderer,
+                        SimpleLineSymbol,
+                        Color,
+                        SimpleFillSymbol,
+                        Print,
+                        LabelClass,
+                        promiseUtils) {
+
+                        typeCreatorProxy = typeRendererCreator;
+                        simpleRendererProxy = new SimpleRenderer();
+
+                        const url = "data2.csv";
+
+                        function blankIfUndefined(item) {
+                            if (item == undefined) {
+                                return "";
+                            } else {
+                                return item;
+                            }
+                        }
+
+
+
+                        const template_dot = new PopupTemplate(
+                            {
+                                title: "Site {SiteName}",
+                                outfields: ["*"],
+                                content: function (data) {
+                                    ///debugger;
+                                    //  if (data.graphic.attributes.FK_Site == 0) {
+
+                                    var br = document.createElement("DIV");
+                                    br.innerHTML = "<br/>";
+
+                                    //site edit icon
+                                    var icon = document.createElement("I");
+                                    icon.className = 'fa fa-info-circle';
+                                    icon.style = 'font-size: 32px;vertical-align:bottom';
+                                    icon.title = 'View Site Details';
+                                    icon.innerHTML = "&nbsp;";
+
+                                    //site edit url
+                                    var siteEditUrl = document.createElement("A");
+                                    siteEditUrl.style = 'color:#8b0015';
+                                    siteEditUrl.href = "/Containers/viewSite/63448eb6-c585-4f19-9b2c-ae5d5a0c2dc2/" + data.graphic.attributes.PK_SiteClass + "/" + data.graphic.attributes.FK_Site;
+                                    siteEditUrl.target = "_new";
+                                    siteEditUrl.append(icon);
+
+                                    //report icon
+                                    var dashimage = document.createElement("IMG");
+                                    dashimage.src = "/Content/Images/ReportDash.svg";
+                                    dashimage.style = "height:28px";
+
+                                    //report link
+                                    var aref = document.createElement("A");
+                                    aref.href = "/ReportExport/Dashboard3/63448eb6-c585-4f19-9b2c-ae5d5a0c2dc2/" +
+                                        data.graphic.attributes.FK_Site;
+                                    //aref.className = "btn btn-default";
+                                    aref.target = "_new";
+                                    aref.title = "View Report Dashboard";
+                                    aref.append(dashimage);
+
+                                    //FOLDER
+                                    var div = document.createElement("DIV");
+                                    div.append(siteEditUrl);
+                                    div.appendChild(aref);
+                                    div.appendChild(br);
+                                    var folder = document.createElement("DIV");
+                                    folder.innerHTML = "<b>Folder:</b> " + data.graphic.attributes.ClassName;
+                                    folder.style = "padding-bottom:5px;";
+                                    div.appendChild(br);
+                                    div.appendChild(folder);
+
+
+                                    //Date Established
+                                    var dateToUse = "" + data.graphic.attributes.Date;
+                                    dateToUse = dateToUse.replace("x", "");
+                                    var dateEstablished = document.createElement("DIV");
+                                    dateEstablished.innerHTML = "<b>Established:</b>" + dateToUse;
+                                    dateEstablished.style = "padding-bottom:5px;";
+                                    div.appendChild(dateEstablished);
+
+
+                                    var coordinates = document.createElement("DIV");
+                                    coordinates.innerHTML = "<b>Coordinates:</b>  Long: " +
+                                        data.graphic.attributes.longitude +
+                                        " Lat:" +
+                                        data.graphic.attributes.latitude;
+                                    coordinates.style = "padding-bottom:5px;";
+                                    div.appendChild(coordinates);
+
+                                    var evelation = document.createElement("DIV");
+                                    evelation.innerHTML = "<b>Elevation:</b> " + data.graphic.attributes.Elevation;
+                                    evelation.style = "padding-bottom:5px;";
+                                    div.appendChild(evelation);
+
+                                    var description = document.createElement("DIV");
+                                    description.innerHTML = "<b>Description:</b> " + data.graphic.attributes.Description;
+                                    div.appendChild(description);
+
+
+                                    return div;
+
+
+                                }
+
+
+                                //content:popupResult
+
+
+
+                            });
+
+                        const gridDiv = document.getElementById("grid");
+                        const infoDiv = document.getElementById("info");
+                        const gridFields = [
+                            "__OBJECTID", "latitude", "longitude",
+                            "ClassName", "SiteName", "Description"
+                        ];
+                        const dataStore = new StoreAdapter({
+                            objectStore: new Memory({
+                                idProperty: "__OBJECTID"
+                            })
+                        });
+                        csvLayer = new CSVLayer({
+                            url: url,
+                            copyright: "University of Arizona",
+                            title: "VGS Data Points",
+                            popupTemplate: template_dot,
+                            objectIdField: "__OBJECTID",
+
+
+                        });
+
+                        map = new Map({
+                            basemap: "topo",
+                            layers: [csvLayer]
+                        });
+
+                        view = new MapView({
+                            container: "viewDiv",
+                            center: [-113.5, 36.7],
+                            zoom: 10,
+                            map: map
+                        });
+
+
+                        csvLayer.when(function () {
+                            const featureLayer = map.layers.getItemAt(0);
+
+
+
+
+
+                            try {
+
+                                const x = csvLayer.fullExtent.center.x;
+                                view.goTo(csvLayer.fullExtent);
+                                const queryParams = csvLayer.createQuery();
+                                queryParams.geometry = csvLayer.fullExtent;
+                                queryParams.where = queryParams.where + " AND  1=1";
+
+                                csvLayer.queryFeatures(queryParams).then(function (results) {
+
+
+                                    const graphics = results.features;
+                                    const data = graphics.map(function (feature, i) {
+                                        return Object.keys(feature.attributes)
+                                            .filter(function (key) {
+                                                // get fields that exist in the grid
+                                                return (gridFields.indexOf(key) !== -1);
+                                            })
+                                            // need to create key value pairs from the feature
+                                            // attributes so that info can be displayed in the grid
+                                            .reduce(function (obj, key) {
+                                                obj[key] = feature.attributes[key];
+                                                return obj;
+                                            },
+                                                {});
+                                    });
+
+                                    // set the datastore for the grid using the
+                                    // attributes we got for the query results
+
+                                    dataStore.objectStore.data = data;
+                                    grid.set("collection", dataStore);
+
+                                });
+
+
+                            } catch (ex) {
+
+                                window.alert("There are no sites in this folder with locations attached");
+                            }
+                            createGrid(csvLayer.fields);
+                            view.whenLayerView(csvLayer).then(function (layerView) {
+                                csvLayerView = layerView;
+
+
+                            });
+
+                        }).catch(errorCallback);;
+
+
+
+
+
+
+
+
+
+
+
+
+                        function selectFeatureFromGrid(event) {
+                            // close view popup if it is open
+                            view.popup.close();
+                            // get the ObjectID value from the clicked row
+                           
+                            var keys = Object.keys(event.grid.selection);
+                            selectedRows = [];
+                            for (var i = 0; i < keys.length; i++)
+                            {
+                                //row = keys[i];
+                               // id = row.data.__OBJECTID;
+                                selectedRows.push(parseInt(keys[i]));
+                            }
+                    
+                             
+
+                            // setup a query by specifying objectIds
+                            const query = {
+                                objectIds: selectedRows ,//[parseInt(id)],
+                                outFields: ["*"],
+                                returnGeometry: true
+                            };
+
+                            // query the csvLayerView using the query set above
+                            csvLayerView.queryFeatures(query).then(function (results) {
+                                     
+                                const graphics = results.features;
+                                // remove all graphics to make sure no selected graphics
+                                view.graphics.removeAll();
+
+                                // create a new selected graphic
+                                for (var i = 0; i < graphics.length; i++) {
+                                    const selectedGraphic = new Graphic({
+                                        geometry: graphics[i].geometry,
+                                        symbol: {
+                                            type: "simple-marker",
+                                            style: "square",
+                                            color: "blue",
+                                            size: "10px", // pixels
+                                            outline: { // autocasts as new SimpleLineSymbol()
+                                                color: [255, 255, 0],
+                                                width: 2 // points
+                                            }
+                                        }
+                                    });
+
+                                    // add the selected graphic to the view
+                                    // this graphic corresponds to the row that was clicked
+                                    view.graphics.add(selectedGraphic);
+                                }
+                                
+                            })
+                                .catch(errorCallback);
+                        }
+
+                        function createGrid(fields) {
+
+                            const columns = fields.filter(function (field, i) {
+                                if (gridFields.indexOf(field.name) !== -1) {
+                                    return field;
+                                }
+                            }).map(function (field) {
+                                if (field.name === "__OBJECTID1") {
+                                    return {
+                                        field: field.name,
+                                        label: field.name,
+                                        sortable: true,
+                                        hidden: true
+                                    };
+                                } else {
+                                    return {
+                                        field: field.name,
+                                        label: field.alias,
+                                        sortable: true
+                                    };
+                                }
+                            });
+
+                            // create a new onDemandGrid with its selection and columnhider
+                            // extensions. Set the columns of the grid to display attributes
+                            // for the layer
+                            grid = new (OnDemandGrid.createSubclass([Selection, ColumnHider]))({
+                                columns: columns
+                            },
+                                "grid");
+
+                            // add a row-click listener on the grid. This will be used
+                            // to highlight the corresponding feature on the view
+                            grid.on("dgrid-select", selectFeatureFromGrid);
+                        }
+
+
+
+                        function clearUpSelection() {
+                            view.graphics.removeAll();
+                            //  grid.clearSelection();
+                        }
+
+                        function errorCallback(error) {
+                            console.log("error:", error);
+                        }
+
+
+                    });
+            }
+
+            RunMap();
+
+
+
+        </script>
+
+
+    </div>
+
+
+
+
+
+
+<div id="info">
+    <!------------- MAP VIEW-->
+    <div id="viewDiv" class="col-lg-12" style="height: 800px; width: 100%;">
+
+
+        <!------------- FILTER BUTTON-->
+        <div id="select-by-polygon" class="esri-widget esri-widget--button esri-widget esri-interactive"
+             title="Select features by polygon">
+
+            <span class="fas fa-filter"></span>
+
+        </div>
+
+
+
+
+    </div>
+
+    <!----------------------GRID HTML-->
+
+</div>
+<br/>
+<div id="showAttributesDiv" style="width:100%">
+    <div id="gridDisplay">
+        <span class="info" id="featureCount"></span>
+        <div id="grid"></div>
+    </div>
+</div>
+
+
+    <style>
+        .navbar-inverse .navbar-nav > li > a {
+            color: white;
+        }
+
+        .navbar-inverse .navbar-link {
+            color: white;
+        }
+
+        .navbar-inverse {
+            background-color: green;
+        }
+
+        .dropdown-menu {
+            background-color: green;
+        }
+
+        .panel-primary > .panel-heading {
+            background-color: green;
+            color: white;
+        }
+
+        .navbar-toggle {
+            background-color: green;
+            color: white;
+        }
+
+
+        btn {
+            background-color: green;
+            color: white;
+        }
+
+        input.btn-primary {
+            background-color: green;
+            color: white;
+        }
+
+        button.btn-primary:hover {
+            background-color: white color: green;
+        }
+
+        input.btn-primary:hover {
+            background-color: white color: green;
+        }
+
+        button.btn-primary {
+            background-color: green;
+            color: white;
+        }
+
+        input.btn-default {
+            background-color: green;
+            color: white;
+        }
+
+            input.btn-default:hover {
+                background-color:;
+                white color:green;
+            }
+    </style>
+
+
+
+
+
+</body>
+</html>

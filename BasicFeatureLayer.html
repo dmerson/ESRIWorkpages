@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Intro to FeatureLayer - 4.14</title>
+
+    <link rel="stylesheet"
+          href="https://js.arcgis.com/4.14/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.14/"></script>
+
+    <style>
+
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <script>
+        var map, webMap, featureLayer
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/renderers/SimpleRenderer",
+            "esri/renderers/smartMapping/creators/type", "esri/layers/MapImageLayer"
+        ], function (Map, MapView, FeatureLayer, SimpleRenderer, typeRendererCreator, MapImageLayer) {
+            var map = new Map({
+                basemap: "topo"
+            });
+
+             view = new MapView({
+                container: "viewDiv",
+                map: map,
+
+                extent: {
+                    // autocasts as new Extent()
+                    xmin: -88.3921429995997,
+                    ymin: 30.1982540004219,
+                    xmax: -84.9630300002343,
+                    ymax: 34.9980660001459,
+                    spatialReference: 4269
+                     
+                }
+            });
+
+            /********************
+             * Add feature layer
+             ********************/
+
+             
+                featureLayer = new FeatureLayer({
+                // url:"https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Landscape_Trees/FeatureServer/0"
+                //url:"https://services1.arcgis.com/Ezk9fcjSUkeadg6u/arcgis/rest/services/us_counties_corona/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0"
+                // url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/ArcGIS/rest/services/Boundary/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/ArcGIS/rest/services/Parks_and_Open_Space/FeatureServer/0"
+                //url:"https://services1.arcgis.com/Ezk9fcjSUkeadg6u/ArcGIS/rest/services/USStates_Tiger_Map2/FeatureServer/0"
+                //url:"https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_States_Generalized/FeatureServer/0"
+                url: "https://services1.arcgis.com/Ezk9fcjSUkeadg6u/ArcGIS/rest/services/ALWaterBodies/FeatureServer",
+                
+            });
+            var typeParams = {
+                layer: featureLayer,
+                view: view,
+                field: "deaths"
+            };
+
+ 
+            map.add(featureLayer);
+        });
+    </script>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Intro to FeatureLayer - 4.14</title>
+    <input type="button" onclick="getScreenshot()" value="PRINT" />
+    <link rel="stylesheet"
+          href="https://js.arcgis.com/4.14/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.14/"></script>
+
+    <style>
+
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <script>
+        function downloadImage(filename, dataUrl) {
+            // the download is handled differently in Microsoft browsers
+            // because the download attribute for <a> elements is not supported
+            if (!window.navigator.msSaveOrOpenBlob) {
+                // in browsers that support the download attribute
+                // a link is created and a programmatic click will trigger the download
+                const element = document.createElement("a");
+                element.setAttribute("href", dataUrl);
+                element.setAttribute("download", filename);
+                element.style.display = "none";
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            } else {
+                // for MS browsers convert dataUrl to Blob
+                const byteString = atob(dataUrl.split(",")[1]);
+                const mimeString = dataUrl
+                    .split(",")[0]
+                    .split(":")[1]
+                    .split(";")[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: mimeString });
+
+                // download file
+                window.navigator.msSaveOrOpenBlob(blob, filename);
+            }
+        }
+        function getScreenshot() {
+            var imagename=prompt("Enter the filename","screenshot")
+            view.takeScreenshot().then(function (screenshot) {
+                //alert(screenshot.dataUrl);
+                downloadImage(imagename + ".jpg", screenshot.dataUrl);
+                //var imageElement = document.getElementById("screenshotImage");
+                //imageElement.src = screenshot.dataUrl;
+            });
+        }
+        var map, webMap, featureLayer,view
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/renderers/SimpleRenderer",
+            "esri/renderers/smartMapping/creators/type", "esri/layers/MapImageLayer"
+        ], function (Map, MapView, FeatureLayer, SimpleRenderer, typeRendererCreator, MapImageLayer) {
+            var map = new Map({
+                basemap: "topo"
+            });
+
+            view = new MapView({
+                container: "viewDiv",
+                map: map,
+
+                extent: {
+                    // autocasts as new Extent()
+                    xmin: -18163537.1105,
+                    ymin: 806984.4034,
+                    xmax: 14950986.85,
+                    ymax: 9558111.1365,
+                    spatialReference: 102100
+                     
+
+                }
+            });
+
+            /********************
+             * Add feature layer
+             ********************/
+
+
+            featureLayer = new FeatureLayer({
+                // url:"https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Landscape_Trees/FeatureServer/0"
+                url:"https://services1.arcgis.com/Ezk9fcjSUkeadg6u/arcgis/rest/services/us_counties_corona/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0"
+                // url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/ArcGIS/rest/services/Boundary/FeatureServer/0"
+                //url:"https://services3.arcgis.com/GVgbJbqm8hXASVYi/ArcGIS/rest/services/Parks_and_Open_Space/FeatureServer/0"
+                //url:"https://services1.arcgis.com/Ezk9fcjSUkeadg6u/ArcGIS/rest/services/USStates_Tiger_Map2/FeatureServer/0"
+                //url:"https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_States_Generalized/FeatureServer/0"
+                // url: "https://services1.arcgis.com/Ezk9fcjSUkeadg6u/ArcGIS/rest/services/ALWaterBodies/FeatureServer",
+
+            });
+            var typeParams = {
+                layer: featureLayer,
+                view: view,
+                field: "deaths"
+            };
+
+
+            map.add(featureLayer);
+        });
+    </script>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+</body>
+</html>
