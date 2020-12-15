@@ -543,22 +543,39 @@
                                                     
                                                 
                                             }
-                                            debugger;
+                                             
                                             if (addGraphic == false) {
+                                                replacementGraphics=[]
                                                 for (var i = 0; i < extentGraphics.length; i++) {
-                                                    debugger;
+                                                     
                                                     if (extentGraphics[i].attributes.selectedGraphicLevel < selectedGraphicLevel) {
                                                         view.graphics.remove(extentGraphics[i]);
                                                     }
+                                                    else {
+                                                        replacementGraphics.push(extentGraphics[i])
+                                                    }
                                                     
                                                 }
+                                                extentGraphics = replacementGraphics; 
 
 
 
                                             }
+                                             
+                                            selectedFK_Sites = [];
+
+                                            $("#SelectedFeatures").val("");
+                                            for (var i = 0; i < extentGraphics.length; i++) {
+
+                                                selectedFK_Sites.push(extentGraphics[i].attributes.FK_Site);
+                                            }
+                                            //add all the fksite to input box for posting for reports
+                                            $("#SelectedFeatures").val(selectedFK_Sites.join(","));
                                             
                                              
-                                        });
+                                        });//end of query
+                                         
+                                        
                                          
                                         
                                     }
@@ -585,6 +602,8 @@
                 for (var i = 0; i < extentGraphics.length; i++) {
                     view.graphics.remove(extentGraphics[i]);
                 }
+                extentGraphics = [];
+                $("#SelectedFeatures").val("");
                 if ($("#multiple")[0].checked == false) {
                     addGraphic = false;
                      
@@ -628,7 +647,7 @@
 </div>
 <br/>
 <div id="showAttributesDiv" style="width:100%">
-    <input type="checkbox" id="multiple" onclick="resetAddGraphic()" />
+    Add to layer <input type="checkbox" id="multiple" onclick="resetAddGraphic()" /><input id="SelectedFeatures" style="width:100%" />
     <div id="gridDisplay">
         <span class="info" id="featureCount"></span>
         <div id="grid"></div>
