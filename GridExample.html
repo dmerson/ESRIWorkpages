@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Get Data Grid  </title>
  
-      
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/css/main.css">
     <script src="https://js.arcgis.com/4.14/"></script>
 </head>
@@ -14,7 +14,7 @@
 
 
     <div class="container body-content">
-
+        
 
 
 
@@ -107,10 +107,14 @@
                 legend,
                 typeCreatorProxy,
                 simpleRendererProxy,
+                
                 labelClass;
 
-
-
+            let extentGraphic = null;
+            let origin = null;
+            let addGraphic = false;
+            let extentGraphics = [];
+            let selectedGraphicLevel = 0;
             function RunMap() {
                 require([
                     "esri/Map",
@@ -137,6 +141,7 @@
                     "esri/layers/support/LabelClass",
 
                     "esri/core/promiseUtils",
+                    "esri/geometry/Extent",
                     "dojo/domReady!"
                 ],
                     function (Map,
@@ -161,12 +166,14 @@
                         SimpleFillSymbol,
                         Print,
                         LabelClass,
-                        promiseUtils) {
+                        promiseUtils, Extent) {
 
                         typeCreatorProxy = typeRendererCreator;
                         simpleRendererProxy = new SimpleRenderer();
 
                         const url = "data2.csv";
+                        
+
 
                         function blankIfUndefined(item) {
                             if (item == undefined) {
@@ -373,28 +380,27 @@
                             // close view popup if it is open
                             view.popup.close();
                             // get the ObjectID value from the clicked row
-                           
+
                             var keys = Object.keys(event.grid.selection);
                             selectedRows = [];
-                            for (var i = 0; i < keys.length; i++)
-                            {
+                            for (var i = 0; i < keys.length; i++) {
                                 //row = keys[i];
-                               // id = row.data.__OBJECTID;
+                                // id = row.data.__OBJECTID;
                                 selectedRows.push(parseInt(keys[i]));
                             }
-                    
-                             
+
+
 
                             // setup a query by specifying objectIds
                             const query = {
-                                objectIds: selectedRows ,//[parseInt(id)],
+                                objectIds: selectedRows,//[parseInt(id)],
                                 outFields: ["*"],
                                 returnGeometry: true
                             };
 
                             // query the csvLayerView using the query set above
                             csvLayerView.queryFeatures(query).then(function (results) {
-                                     
+
                                 const graphics = results.features;
                                 // remove all graphics to make sure no selected graphics
                                 view.graphics.removeAll();
@@ -419,7 +425,7 @@
                                     // this graphic corresponds to the row that was clicked
                                     view.graphics.add(selectedGraphic);
                                 }
-                                
+
                             })
                                 .catch(errorCallback);
                         }
@@ -459,7 +465,106 @@
                             // to highlight the corresponding feature on the view
                             grid.on("dgrid-select", selectFeatureFromGrid);
                         }
+                        var fillSymbol = {
+                            type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                            color: [227, 139, 79, 0.8],
+                            outline: { // autocasts as new SimpleLineSymbol()
+                                color: [255, 255, 255],
+                                width: 1
+                            }
+                        };
 
+
+
+                       
+                        view.on('drag', e => {
+
+                            if (e.native.ctrlKey) {
+
+                                e.stopPropagation();
+                                if (e.action === 'start') {
+                                    //if ($("#multiple")[0].checked == false) {
+                                        if (extentGraphic) view.graphics.remove(extentGraphic)
+                                    //}
+
+                                    origin = view.toMap(e);
+                                } else if (e.action === 'update') {
+                                    //if ($("#multiple")[0].checked == false) {
+                                        if (extentGraphic) view.graphics.remove(extentGraphic)
+                                    //}
+                                    let p = view.toMap(e);
+                                    extentGraphic = new Graphic({
+                                        geometry: new Extent({
+                                            xmin: Math.min(p.x, origin.x),
+                                            xmax: Math.max(p.x, origin.x),
+                                            ymin: Math.min(p.y, origin.y),
+                                            ymax: Math.max(p.y, origin.y),
+                                            spatialReference: { wkid: 102100 }
+                                        }),
+                                        symbol: fillSymbol
+                                    })
+                                    
+                                    view.graphics.add(extentGraphic)
+                                }
+                                else {
+                                    if (e.action == "end") {
+                                        selectedGraphicLevel = selectedGraphicLevel + 1;
+                                        const queryParams = csvLayer.createQuery();
+                                        queryParams.geometry = extentGraphic.geometry;
+                                        csvLayer.queryFeatures(queryParams).then(function (results) {
+                                            
+                                            
+                                            view.graphics.remove(extentGraphic)
+                                            const graphics = results.features;
+                                            // create a new selected graphic
+                                            for (var i = 0; i < graphics.length; i++) {
+                                                graphics[0].attributes.selectedGraphicLevel = selectedGraphicLevel;
+                                                const selectedGraphic = new Graphic({
+                                                     
+                                                    attributes: graphics[0].attributes,
+                                                    geometry: graphics[i].geometry,
+                                                    symbol: {
+                                                        type: "simple-marker",
+                                                        style: "circle",
+                                                        color: "black",
+                                                        size: "8px", // pixels
+                                                        outline: { // autocasts as new SimpleLineSymbol()
+                                                            color: "lightblue",
+                                                            width: 2 // points
+                                                        }
+                                                    }
+                                                });
+                                                extentGraphics.push(selectedGraphic)
+                                                
+                                                // add the selected graphic to the view
+                                                // this graphic corresponds to the row that was clicked
+                                                view.graphics.add(selectedGraphic);
+                                                 
+                                                    
+                                                
+                                            }
+                                            debugger;
+                                            if (addGraphic == false) {
+                                                for (var i = 0; i < extentGraphics.length; i++) {
+                                                    debugger;
+                                                    if (extentGraphics[i].attributes.selectedGraphicLevel < selectedGraphicLevel) {
+                                                        view.graphics.remove(extentGraphics[i]);
+                                                    }
+                                                    
+                                                }
+
+
+
+                                            }
+                                            
+                                             
+                                        });
+                                         
+                                        
+                                    }
+                                }
+                            }
+                        });
 
 
                         function clearUpSelection() {
@@ -476,7 +581,18 @@
             }
 
             RunMap();
-
+            function resetAddGraphic() {
+                for (var i = 0; i < extentGraphics.length; i++) {
+                    view.graphics.remove(extentGraphics[i]);
+                }
+                if ($("#multiple")[0].checked == false) {
+                    addGraphic = false;
+                     
+                }
+                else {
+                    addGraphic = true;
+                }
+            }
 
 
         </script>
@@ -512,6 +628,7 @@
 </div>
 <br/>
 <div id="showAttributesDiv" style="width:100%">
+    <input type="checkbox" id="multiple" onclick="resetAddGraphic()" />
     <div id="gridDisplay">
         <span class="info" id="featureCount"></span>
         <div id="grid"></div>
