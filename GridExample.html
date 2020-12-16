@@ -107,7 +107,7 @@
                 legend,
                 typeCreatorProxy,
                 simpleRendererProxy,
-                
+                dataStore,
                 labelClass;
 
             let extentGraphic = null;
@@ -115,6 +115,10 @@
             let addGraphic = false;
             let extentGraphics = [];
             let selectedGraphicLevel = 0;
+            const gridFields = [
+                "__OBJECTID", "latitude", "longitude",
+                "ClassName", "SiteName", "Description"
+            ];
             function RunMap() {
                 require([
                     "esri/Map",
@@ -142,6 +146,7 @@
 
                     "esri/core/promiseUtils",
                     "esri/geometry/Extent",
+                    "esri/widgets/Sketch/SketchViewModel", "esri/widgets/Sketch",
                     "dojo/domReady!"
                 ],
                     function (Map,
@@ -166,7 +171,7 @@
                         SimpleFillSymbol,
                         Print,
                         LabelClass,
-                        promiseUtils, Extent) {
+                        promiseUtils, Extent, SketchViewModel, Sketch) {
 
                         typeCreatorProxy = typeRendererCreator;
                         simpleRendererProxy = new SimpleRenderer();
@@ -277,11 +282,8 @@
 
                         const gridDiv = document.getElementById("grid");
                         const infoDiv = document.getElementById("info");
-                        const gridFields = [
-                            "__OBJECTID", "latitude", "longitude",
-                            "ClassName", "SiteName", "Description"
-                        ];
-                        const dataStore = new StoreAdapter({
+                      
+                         dataStore = new StoreAdapter({
                             objectStore: new Memory({
                                 idProperty: "__OBJECTID"
                             })
@@ -308,7 +310,188 @@
                             map: map
                         });
 
+                       
 
+                        // click event for the button
+                        
+                        sketchViewModel = new SketchViewModel({
+                            view: view,
+                            layer: polygonGraphicsLayer,
+                            pointSymbol: {
+                                type: "simple-marker",
+                                color: [255, 255, 255, 0],
+                                size: "1px",
+                                outline: {
+                                    color: "gray",
+                                    width: 0
+                                }
+                            }
+                        });
+                        //const layer = new GraphicsLayer();
+                        //const sketch = new Sketch({
+                        //    layer: layer,
+                        //    view: view,
+                        //    // graphic will be selected as soon as it is created
+                        //    creationMode: "update"
+                        //});
+
+                        //view.ui.add(sketch, "top-right");
+                        function selectFeatures(geometry) {
+                            //view.graphics.removeAll();
+                            if (csvLayerView) {
+
+                                // create a query and set its geometry parameter to the
+                                // polygon that was drawn on the view
+                                //const query = {
+                                //    geometry: geometry,
+                                //    outFields: ["*"]
+                                //};
+                                const query = csvLayer.createQuery();
+                                query.geometry = geometry;
+                                // query graphics from the csv layer view. Geometry set for the query
+                                // can be polygon for point features and only intersecting geometries are returned
+                                csvLayerView.queryFeatures(query).then(function (results) {
+
+                                    if (results.features.length === 0) {
+
+
+                                        grid.set("collection", [{}]);
+                                        document.getElementById("featureCount").innerHTML =
+                                            "<b>No record for feature </b>";
+                                        view.graphics.removeAll();
+                                        $("#SelectedFeatures").val("");
+
+                                        return;
+                                    }
+
+                                    const graphics = results.features;
+                                    // debugger;
+                                    // if the grid div is displayed while query results does not
+                                    // return graphics then hide the grid div and show the instructions div
+                                    selectedGraphicLevel = selectedGraphicLevel + 1; 
+                                    drawSelectedGraphics(graphics);
+                                    return;
+                                    if (graphics.length > 0) {
+
+                                        for (let i = 0; i < graphics.length; i++) {
+                                            const siteId = graphics[i].attributes.FK_Site;
+                                            if (i > 0) {
+                                                $("#SelectedFeatures").val($("#SelectedFeatures").val() + "," + siteId);
+                                            } else {
+                                                $("#SelectedFeatures").val(siteId);
+                                            }
+                                        }
+
+                                        //$("#showAttributes").removeClass("hidden");
+                                        ////$("#showAttributesDiv").addClass("hidden");
+                                        ////$("#DataScopeMultipleSiteLink").removeClass("hidden");
+                                        //$("#reportList").removeClass("hidden");
+                                        ////$("#MultipleSiteHistoryLink").removeClass("hidden");
+                                        //$("#SaveSiteClass").removeClass("hidden");
+                                        //$("#reportDropdown").removeClass("hidden");
+                                        // $("#S3SummaryLink").removeClass("hidden");
+                                        // zoom to the extent of the polygon with factor 2
+                                        view.goTo(geometry.extent.expand(2));
+                                        gridDiv.style.zIndex = 90;
+                                        infoDiv.style.zIndex = 80;
+                                        document.getElementById("featureCount").innerHTML =
+                                            `<b>Showing attributes for ${graphics.length.toString()} features </b>`;
+                                    } else {
+                                        gridDiv.style.zIndex = 80;
+                                        infoDiv.style.zIndex = 90;
+                                        //$("#DataScopeMultipleSiteId").addClass("hidden");
+                                    }
+
+                                    // remove existing highlighted features
+                                    if (highlight) {
+                                        highlight.remove();
+                                    }
+
+                                    // highlight query results
+                                    highlight = csvLayerView.highlight(graphics);
+
+                                    // get the attributes to display in the grid
+                                    const data = graphics.map(function (feature, i) {
+                                        return Object.keys(feature.attributes)
+                                            .filter(function (key) {
+                                                // get fields that exist in the grid
+                                                return (gridFields.indexOf(key) !== -1);
+                                            })
+                                            // need to create key value pairs from the feature
+                                            // attributes so that info can be displayed in the grid
+                                            .reduce(function (obj, key) {
+                                                obj[key] = feature.attributes[key];
+                                                return obj;
+                                            },
+                                                {});
+                                    });
+
+                                    // set the datastore for the grid using the
+                                    // attributes we got for the query results
+
+                                    dataStore.objectStore.data = data;
+                                    grid.set("collection", dataStore);
+
+
+                                })
+                                    .catch(errorCallback);
+                            }
+                        }
+                        function setUpSketchViewModel() {
+
+                            // polygonGraphicsLayer will be used by the sketchviewmodel
+                            // show the polygon being drawn on the view
+                            polygonGraphicsLayer = new GraphicsLayer();
+                            map.add(polygonGraphicsLayer);
+
+                            // add the select by polygon button the view
+                             view.ui.add("select-by-polygon", "top-right"); 
+                            const selectButton = document.getElementById("select-by-polygon");
+
+                            // click event for the button
+                            selectButton.addEventListener("click",
+                                function () {
+
+                                   // clearUpSelection();
+                                    view.popup.close();
+                                    // ready to draw a polygon
+                                    sketchViewModel.create("polygon");
+                                });
+
+                            // create a new sketch view model set its layer
+                            sketchViewModel = new SketchViewModel({
+                                view: view,
+                                layer: polygonGraphicsLayer,
+                                pointSymbol: {
+                                    type: "simple-marker",
+                                    color: [255, 255, 255, 0],
+                                    size: "1px",
+                                    outline: {
+                                        color: "gray",
+                                        width: 0
+                                    }
+                                }
+                            });
+                        }
+                        function clearUpSelection() {
+                            view.graphics.removeAll();
+                            //  grid.clearSelection();
+                        }
+
+                        function errorCallback(error) {
+                            console.log("error:", error);
+                        }
+                        setUpSketchViewModel();
+                         
+                        sketchViewModel.on("create",
+                            function(event) {
+                                if (event.state === "complete") {
+                                    // this polygon will be used to query features that intersect it
+                                    polygonGraphicsLayer.remove(event.graphic);
+                                    selectFeatures(event.graphic.geometry);
+
+                                }
+                            });
                         csvLayer.when(function () {
                             const featureLayer = map.layers.getItemAt(0);
 
@@ -474,7 +657,81 @@
                             }
                         };
 
+                        function drawSelectedGraphics(graphics) {
+                            debugger;
+                            for (var i = 0; i < graphics.length; i++) {
+                                graphics[i].attributes.selectedGraphicLevel = selectedGraphicLevel;
+                                const selectedGraphic = new Graphic({
 
+                                    attributes: graphics[i].attributes,
+                                    geometry: graphics[i].geometry,
+                                    symbol: {
+                                        type: "simple-marker",
+                                        style: "circle",
+                                        color: "black",
+                                        size: "8px", // pixels
+                                        outline: { // autocasts as new SimpleLineSymbol()
+                                            color: "lightblue",
+                                            width: 2 // points
+                                        }
+                                    }
+                                });
+                                extentGraphics.push(selectedGraphic);
+
+                                // add the selected graphic to the view
+                                // this graphic corresponds to the row that was clicked
+                                
+                                view.graphics.add(selectedGraphic);
+
+
+
+                            }
+
+                            if (addGraphic == false) {
+                                replacementGraphics = []
+                                for (var i = 0; i < extentGraphics.length; i++) {
+
+                                    if (extentGraphics[i].attributes.selectedGraphicLevel < selectedGraphicLevel) {
+                                        view.graphics.remove(extentGraphics[i]);
+                                    }
+                                    else {
+                                        replacementGraphics.push(extentGraphics[i])
+                                    }
+
+                                }
+                                extentGraphics = replacementGraphics;
+                            }
+                            //get all the fk_sites and put them in string in input to send to report 
+                            selectedFK_Sites = [];
+                            $("#SelectedFeatures").val("");
+                            for (var i = 0; i < extentGraphics.length; i++) {
+
+                                selectedFK_Sites.push(extentGraphics[i].attributes.FK_Site);
+                            }
+                            //add all the fksite to input box for posting for reports
+                            $("#SelectedFeatures").val(selectedFK_Sites.join(","));
+                            //get the data for the data grid
+                            const data = extentGraphics.map(function (feature, i) {
+                                return Object.keys(feature.attributes)
+                                    .filter(function (key) {
+                                        // get fields that exist in the grid
+                                        return (gridFields.indexOf(key) !== -1);
+                                    })
+                                    // need to create key value pairs from the feature
+                                    // attributes so that info can be displayed in the grid
+                                    .reduce(function (obj, key) {
+                                        obj[key] = feature.attributes[key];
+                                        return obj;
+                                    },
+                                        {});
+                            });
+
+                            // set the datastore for the grid using the
+                            // attributes we got for the query results
+
+                            dataStore.objectStore.data = data;
+                            grid.set("collection", dataStore);
+                        }
 
                        
                         view.on('drag', e => {
@@ -517,62 +774,8 @@
                                             view.graphics.remove(extentGraphic)
                                             const graphics = results.features;
                                             // create a new selected graphic
-                                            for (var i = 0; i < graphics.length; i++) {
-                                                graphics[0].attributes.selectedGraphicLevel = selectedGraphicLevel;
-                                                const selectedGraphic = new Graphic({
-                                                     
-                                                    attributes: graphics[0].attributes,
-                                                    geometry: graphics[i].geometry,
-                                                    symbol: {
-                                                        type: "simple-marker",
-                                                        style: "circle",
-                                                        color: "black",
-                                                        size: "8px", // pixels
-                                                        outline: { // autocasts as new SimpleLineSymbol()
-                                                            color: "lightblue",
-                                                            width: 2 // points
-                                                        }
-                                                    }
-                                                });
-                                                extentGraphics.push(selectedGraphic)
-                                                
-                                                // add the selected graphic to the view
-                                                // this graphic corresponds to the row that was clicked
-                                                view.graphics.add(selectedGraphic);
-                                                 
-                                                    
-                                                
-                                            }
-                                             
-                                            if (addGraphic == false) {
-                                                replacementGraphics=[]
-                                                for (var i = 0; i < extentGraphics.length; i++) {
-                                                     
-                                                    if (extentGraphics[i].attributes.selectedGraphicLevel < selectedGraphicLevel) {
-                                                        view.graphics.remove(extentGraphics[i]);
-                                                    }
-                                                    else {
-                                                        replacementGraphics.push(extentGraphics[i])
-                                                    }
-                                                    
-                                                }
-                                                extentGraphics = replacementGraphics; 
+                                            drawSelectedGraphics(graphics);
 
-
-
-                                            }
-                                             
-                                            selectedFK_Sites = [];
-
-                                            $("#SelectedFeatures").val("");
-                                            for (var i = 0; i < extentGraphics.length; i++) {
-
-                                                selectedFK_Sites.push(extentGraphics[i].attributes.FK_Site);
-                                            }
-                                            //add all the fksite to input box for posting for reports
-                                            $("#SelectedFeatures").val(selectedFK_Sites.join(","));
-                                            
-                                             
                                         });//end of query
                                          
                                         
@@ -603,7 +806,11 @@
                     view.graphics.remove(extentGraphics[i]);
                 }
                 extentGraphics = [];
+
                 $("#SelectedFeatures").val("");
+                resetToAll();
+                     
+                
                 if ($("#multiple")[0].checked == false) {
                     addGraphic = false;
                      
@@ -612,7 +819,40 @@
                     addGraphic = true;
                 }
             }
+            function resetToAll() {
+                const queryParams = csvLayer.createQuery();
 
+                queryParams.where = " __OBJECTID > 0";
+
+                csvLayer.queryFeatures(queryParams).then(function (results) {
+
+
+                    const graphics = results.features;
+
+                    const data = graphics.map(function (feature) {
+
+                        return Object.keys(feature.attributes)
+                            .filter(function (key) {
+
+                                // get fields that exist in the grid
+                                return (gridFields.indexOf(key) !== -1);
+                            })
+                            // need to create key value pairs from the feature
+                            // attributes so that info can be displayed in the grid
+                            .reduce(function (obj, key) {
+                                obj[key] = feature.attributes[key];
+                                return obj;
+                            },
+                                {});
+                    });
+
+                    // set the datastore for the grid using the
+                    // attributes we got for the query results
+
+                    dataStore.objectStore.data = data;
+                    grid.set("collection", dataStore);
+                });
+            }
 
         </script>
 
@@ -716,7 +956,7 @@
                 white color:green;
             }
     </style>
-
+<script></script>
 
 
 
