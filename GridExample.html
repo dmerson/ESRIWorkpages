@@ -337,100 +337,24 @@
 
                         //view.ui.add(sketch, "top-right");
                         function selectFeatures(geometry) {
-                            //view.graphics.removeAll();
+                             
                             if (csvLayerView) {
 
-                                // create a query and set its geometry parameter to the
-                                // polygon that was drawn on the view
-                                //const query = {
-                                //    geometry: geometry,
-                                //    outFields: ["*"]
-                                //};
+                                // use this version of createQuery to get the geometry back
                                 const query = csvLayer.createQuery();
                                 query.geometry = geometry;
                                 // query graphics from the csv layer view. Geometry set for the query
                                 // can be polygon for point features and only intersecting geometries are returned
                                 csvLayerView.queryFeatures(query).then(function (results) {
 
-                                    if (results.features.length === 0) {
-
-
-                                        grid.set("collection", [{}]);
-                                        document.getElementById("featureCount").innerHTML =
-                                            "<b>No record for feature </b>";
-                                        view.graphics.removeAll();
-                                        $("#SelectedFeatures").val("");
-
-                                        return;
-                                    }
+                                     
 
                                     const graphics = results.features;
-                                    // debugger;
-                                    // if the grid div is displayed while query results does not
-                                    // return graphics then hide the grid div and show the instructions div
+                                    //add this selectedGraphicLevel which helps with multiple selections
                                     selectedGraphicLevel = selectedGraphicLevel + 1; 
                                     drawSelectedGraphics(graphics);
                                     return;
-                                    if (graphics.length > 0) {
-
-                                        for (let i = 0; i < graphics.length; i++) {
-                                            const siteId = graphics[i].attributes.FK_Site;
-                                            if (i > 0) {
-                                                $("#SelectedFeatures").val($("#SelectedFeatures").val() + "," + siteId);
-                                            } else {
-                                                $("#SelectedFeatures").val(siteId);
-                                            }
-                                        }
-
-                                        //$("#showAttributes").removeClass("hidden");
-                                        ////$("#showAttributesDiv").addClass("hidden");
-                                        ////$("#DataScopeMultipleSiteLink").removeClass("hidden");
-                                        //$("#reportList").removeClass("hidden");
-                                        ////$("#MultipleSiteHistoryLink").removeClass("hidden");
-                                        //$("#SaveSiteClass").removeClass("hidden");
-                                        //$("#reportDropdown").removeClass("hidden");
-                                        // $("#S3SummaryLink").removeClass("hidden");
-                                        // zoom to the extent of the polygon with factor 2
-                                        view.goTo(geometry.extent.expand(2));
-                                        gridDiv.style.zIndex = 90;
-                                        infoDiv.style.zIndex = 80;
-                                        document.getElementById("featureCount").innerHTML =
-                                            `<b>Showing attributes for ${graphics.length.toString()} features </b>`;
-                                    } else {
-                                        gridDiv.style.zIndex = 80;
-                                        infoDiv.style.zIndex = 90;
-                                        //$("#DataScopeMultipleSiteId").addClass("hidden");
-                                    }
-
-                                    // remove existing highlighted features
-                                    if (highlight) {
-                                        highlight.remove();
-                                    }
-
-                                    // highlight query results
-                                    highlight = csvLayerView.highlight(graphics);
-
-                                    // get the attributes to display in the grid
-                                    const data = graphics.map(function (feature, i) {
-                                        return Object.keys(feature.attributes)
-                                            .filter(function (key) {
-                                                // get fields that exist in the grid
-                                                return (gridFields.indexOf(key) !== -1);
-                                            })
-                                            // need to create key value pairs from the feature
-                                            // attributes so that info can be displayed in the grid
-                                            .reduce(function (obj, key) {
-                                                obj[key] = feature.attributes[key];
-                                                return obj;
-                                            },
-                                                {});
-                                    });
-
-                                    // set the datastore for the grid using the
-                                    // attributes we got for the query results
-
-                                    dataStore.objectStore.data = data;
-                                    grid.set("collection", dataStore);
+                                    
 
 
                                 })
@@ -563,7 +487,7 @@
                             // close view popup if it is open
                             view.popup.close();
                             // get the ObjectID value from the clicked row
-
+                            view.graphics.removeAll()
                             var keys = Object.keys(event.grid.selection);
                             selectedRows = [];
                             for (var i = 0; i < keys.length; i++) {
